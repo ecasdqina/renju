@@ -1,11 +1,18 @@
-from sys import path
-path.append('./')
+import sys
+import pathlib
+sys.path.append(pathlib.Path(__file__).parent.__str__())
+
 
 from typing import NoReturn, Tuple, List, Optional
 from enum import Enum, auto
 
 from constants import HEIGHT, WIDTH
 
+
+class IllegalMove(Exception):
+    """禁手"""
+
+    pass
 
 class PlayerType(Enum):
     """プレイヤータイプ
@@ -17,6 +24,11 @@ class PlayerType(Enum):
 
     FIRST = auto()
     SECOND = auto()
+
+def get_opposite(player: PlayerType) -> PlayerType:
+    if player is PlayerType.FIRST:
+        return PlayerType.SECOND
+    return PlayerType.FIRST
 
 
 class SquareType(Enum):
@@ -59,6 +71,14 @@ class Move:
         self._x = x
         self._y = y
 
+    def __eq__(self, other) -> bool:
+        if not isinstance(other, Move):
+            return NotImplemented
+
+        return self.player == other.player and\
+            self.x == other.x and \
+            self.y == other.y
+
     def __repr__(self):
         if self.player is not None:
             return f'{self.player}{self.point}'
@@ -99,8 +119,8 @@ class Move:
         self._y = value
 
 
-# 黒は最初中央に置くs
-FIRST_MOVE = Move(7, 7)
+# 黒は最初中央に置く
+FIRST_MOVE = Move(7, 7, player=PlayerType.FIRST)
 NONE_MOVE = Move(None, None)
 
 
@@ -143,8 +163,18 @@ class Board:
 
         return self._putter
 
+    @property
+    def height(self) -> int:
+        return HEIGHT
+
+    @property
+    def width(self) -> int:
+        return WIDTH
+
     def add_move(self, move: Move) -> NoReturn:
         """石を置く"""
+        if not isinstance(move, Move):
+            move = Move(*move)
 
         if move.player is None:
             move.player = self.putter
@@ -168,6 +198,11 @@ class Board:
         else:
             self._putter = PlayerType.FIRST
 
+    def decrement_turn(self) -> NoReturn:
+        """前ターンへ遷移"""
+
+        self.increment_turn()
+
 
 class Renju(Board):
     _finished = False
@@ -176,15 +211,36 @@ class Renju(Board):
     def __init__(self):
         super().__init__()
 
+    def pop(self) -> NoReturn:
+        """一手戻す"""
+
+        if self.turn == 0:
+            raise Exception
+
+        move = self._score_sheet[-1]
+
+        x, y = move.point
+        self.board[x][y] = SquareType.VACANT
+        self._score_sheet.pop()
+        self.decrement_turn()
+
+        self._finished, self._winner = False, None
+
     def add_move(self, move: Move) -> NoReturn:
+        if not isinstance(move, Move):
+            move = Move(*move)
+
         if move.player is None:
             move.player = self.putter
 
         if self.finished:
             raise ValueError(f"game is already finished")
 
+        # 禁手を置いたときは、置いた方の負け
         if not self.is_legal_move(move):
-            raise ValueError(f"can't move to {move.point}")
+            self._finished = True
+            self._winner = get_opposite(self.putter)
+            raise IllegalMove
 
         super().add_move(move)
 
@@ -198,10 +254,19 @@ class Renju(Board):
         Todo: 黒の禁手処理の実装
         """
 
+        if not isinstance(move, Move):
+            move = Move(*move)
+
+        if move.player is None:
+            move.player = self.putter
+
         (x, y), player = move.point, move.player
 
+        if player is None:
+            player = self.putter
+
         # 初手は中央のみ
-        if self.turn == 0 and move is not FIRST_MOVE:
+        if self.turn == 0 and move != FIRST_MOVE:
             return False
 
         # すでに置かれている
@@ -212,7 +277,7 @@ class Renju(Board):
         if player is PlayerType.SECOND:
             return True
 
-        # 黒の禁手処理
+        # TODO: 黒の禁手処理
 
         return True
 
@@ -251,7 +316,7 @@ class Renju(Board):
                 if count >= 5:
                     return True
 
-        # 左下斜方向
+        # 左下斜\方向
         for xi in range(HEIGHT):
             count = 0 if self.board[xi][0] is SquareType.VACANT else 1
             for yi in range(1, WIDTH - xi):
@@ -269,7 +334,7 @@ class Renju(Board):
                 if count >= 5:
                     return True
 
-        # 右上斜方向
+        # 右上斜\方向
         for yi in range(1, WIDTH):
             count = 0 if self.board[0][yi] is SquareType.VACANT else 1
             for xi in range(1, HEIGHT - yi):
@@ -280,6 +345,42 @@ class Renju(Board):
                     continue
 
                 if self.board[x][y] == self.board[x - 1][y - 1]:
+                    count += 1
+                else:
+                    count = 1
+
+                if count >= 5:
+                    return True
+
+        # 左上斜/方向
+        for yi in range(WIDTH):
+            count = 0 if self.board[0][yi] is SquareType.VACANT else 1
+            for xi in range(1, yi + 1):
+                x, y = xi, yi - xi
+
+                if self.board[x][y] is SquareType.VACANT:
+                    count = 0
+                    continue
+
+                if self.board[x][y] == self.board[x - 1][y + 1]:
+                    count += 1
+                else:
+                    count = 1
+
+                if count >= 5:
+                    return True
+
+        # 右下斜/方向
+        for xi in range(HEIGHT):
+            count = 0 if self.board[xi][-1] is SquareType.VACANT else 1
+            for yi in range(1, HEIGHT - xi):
+                x, y = xi + yi, -(yi + 1)
+
+                if self.board[x][y] is SquareType.VACANT:
+                    count = 0
+                    continue
+
+                if self.board[x][y] == self.board[x - 1][y + 1]:
                     count += 1
                 else:
                     count = 1
@@ -317,18 +418,4 @@ class Renju(Board):
 
 
 if __name__ == '__main__':
-    renju = Renju()
-
-    renju.add_move(FIRST_MOVE)  # Move(7, 7)
-    renju.add_move(Move(0, 0))
-    renju.add_move(Move(1, 0))
-    renju.add_move(Move(0, 1))
-    renju.add_move(Move(1, 1))
-    renju.add_move(Move(0, 2))
-    renju.add_move(Move(1, 2))
-    renju.add_move(Move(0, 3))
-    renju.add_move(Move(1, 3))
-    renju.add_move(Move(0, 4))
-#    renju.add_move(Move(1, 4))
-
-    renju.print_ascii()
+    pass
