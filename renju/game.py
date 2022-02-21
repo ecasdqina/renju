@@ -14,6 +14,7 @@ class IllegalMove(Exception):
 
     pass
 
+
 class PlayerType(Enum):
     """プレイヤータイプ
 
@@ -24,6 +25,7 @@ class PlayerType(Enum):
 
     FIRST = auto()
     SECOND = auto()
+
 
 def get_opposite(player: PlayerType) -> PlayerType:
     if player is PlayerType.FIRST:
@@ -244,7 +246,9 @@ class Renju(Board):
 
         super().add_move(move)
 
-        if self.check_finished():
+        # 勝利判定
+        res = self.renzoku(move)
+        if max(res) >= 5:
             self._finished = True
             self._winner = move.player
 
@@ -277,118 +281,59 @@ class Renju(Board):
         if player is PlayerType.SECOND:
             return True
 
-        # TODO: 黒の禁手処理
+        # 黒の禁手処理
+        res = self.renzoku(move)
+        print(res)
+        if res.count(3) > 1:  # 三三
+            return False
+        if res.count(4) > 1:  # 四四
+            return False
+        if max(res) > 5:  # 長連
+            return False
 
         return True
 
-    def check_finished(self) -> bool:
-        """ゲームが終了条件を満たしているとき True"""
+    def renzoku(self, move: Move) -> bool:
+        """move に置いたときにできる連続を見つける"""
 
-        # 横方向
-        for x in range(HEIGHT):
-            count = 0 if self.board[x][0] is SquareType.VACANT else 1
-            for y in range(1, WIDTH):
-                if self.board[x][y] is SquareType.VACANT:
-                    count = 0
-                    continue
+        res = []
+        directions = [(0, 1), (-1, 1), (-1, 0), (-1, -1)]
+        for (dx, dy) in directions:
+            my_type = to_square_type(move.player)
+            count = 1
 
-                if self.board[x][y] == self.board[x][y - 1]:
+            x, y = move.x, move.y
+            while True:
+                x += dx
+                y += dy
+
+                # 盤外
+                if x < 0 or y < 0 or x >= HEIGHT or y >= WIDTH:
+                    break
+
+                print(self.board[x][y], my_type)
+                if self.board[x][y] is my_type:
                     count += 1
                 else:
-                    count = 1
+                    break
 
-                if count >= 5:
-                    return True
+            x, y = move.x, move.y
+            while True:
+                x -= dx
+                y -= dy
 
-        # 縦方向
-        for y in range(WIDTH):
-            count = 0 if self.board[0][y] is SquareType.VACANT else 1
-            for x in range(1, HEIGHT):
-                if self.board[x][y] is SquareType.VACANT:
-                    count = 0
-                    continue
+                # 盤外
+                if x < 0 or y < 0 or x >= HEIGHT or y >= WIDTH:
+                    break
 
-                if self.board[x][y] == self.board[x - 1][y]:
+                if self.board[x][y] is my_type:
                     count += 1
                 else:
-                    count = 1
+                    break
 
-                if count >= 5:
-                    return True
+            res.append(count)
 
-        # 左下斜\方向
-        for xi in range(HEIGHT):
-            count = 0 if self.board[xi][0] is SquareType.VACANT else 1
-            for yi in range(1, WIDTH - xi):
-                x, y = xi + yi, yi
-
-                if self.board[x][y] is SquareType.VACANT:
-                    count = 0
-                    continue
-
-                if self.board[x][y] == self.board[x - 1][y - 1]:
-                    count += 1
-                else:
-                    count = 1
-
-                if count >= 5:
-                    return True
-
-        # 右上斜\方向
-        for yi in range(1, WIDTH):
-            count = 0 if self.board[0][yi] is SquareType.VACANT else 1
-            for xi in range(1, HEIGHT - yi):
-                x, y = xi, yi + xi
-
-                if self.board[x][y] is SquareType.VACANT:
-                    count = 0
-                    continue
-
-                if self.board[x][y] == self.board[x - 1][y - 1]:
-                    count += 1
-                else:
-                    count = 1
-
-                if count >= 5:
-                    return True
-
-        # 左上斜/方向
-        for yi in range(WIDTH):
-            count = 0 if self.board[0][yi] is SquareType.VACANT else 1
-            for xi in range(1, yi + 1):
-                x, y = xi, yi - xi
-
-                if self.board[x][y] is SquareType.VACANT:
-                    count = 0
-                    continue
-
-                if self.board[x][y] == self.board[x - 1][y + 1]:
-                    count += 1
-                else:
-                    count = 1
-
-                if count >= 5:
-                    return True
-
-        # 右下斜/方向
-        for xi in range(HEIGHT):
-            count = 0 if self.board[xi][-1] is SquareType.VACANT else 1
-            for yi in range(1, HEIGHT - xi):
-                x, y = xi + yi, -(yi + 1)
-
-                if self.board[x][y] is SquareType.VACANT:
-                    count = 0
-                    continue
-
-                if self.board[x][y] == self.board[x - 1][y + 1]:
-                    count += 1
-                else:
-                    count = 1
-
-                if count >= 5:
-                    return True
-
-        return False
+        return res
 
     @property
     def finished(self) -> bool:
