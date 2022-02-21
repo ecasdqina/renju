@@ -2,30 +2,36 @@
 
 ## game.py
 
-連珠の実装が入っています。
+連珠の実装
 
 ## prompt.py
 
-ターミナルに表示するための補助用コード類が入っています。
+ターミナル表示
 
 ## sheet.py
 
-CSV 処理用のコードが入っています。
+CSV 処理用
 
 ## main.py
 
-ジャッジコードが入っています。
+ジャッジコード
 
 ## 使い方
 
-### インストール
-
-pip3 で入ります。
+requirements.txt を元に pip3 で依存ライブラリをインストール
 
 ### 対戦
 
-実行方法をオプションで渡せば動きます。渡さなければ手で打つことになります。
+実行方法をオプションで渡す、渡さなければ手で打つ。
 
 ```bash
-$ renju -f 'python3 solver/random_solver.py' -s 'python3 solver/random_solver.py'
+$ python3/main.py -f 'python3 solver/random_solver.py' -s 'python3 solver/random_solver.py'
+```
+
+### ソルバー単体
+
+引数に手順の CSV ファイルを指定して `solver/random_solver.py` を実行すると手を探索し標準出力に出力する。
+
+```bash
+$ python3 solver/random_solver.py score_sheet.txt
 ```

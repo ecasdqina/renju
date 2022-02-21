@@ -183,9 +183,6 @@ def prompt(renju: Renju) -> Tuple[int, int]:
 
     人間に手を選ばせる。
 
-    Args:
-
-
     Returns:
         Tuple[int, int]: 選択された位置
     """
@@ -264,9 +261,6 @@ def visualize(*,
     """盤面のビジュアライズ
 
     ソルバの結果の表示のみ。
-
-    Args:
-        wait_time (Optional[int], optional): [description]. Defaults to None.
     """
 
     bc = BoardControl(renju=renju, prompt=False)

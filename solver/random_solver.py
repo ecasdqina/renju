@@ -24,7 +24,7 @@ def main():
                 win_moves.append((x, y))
             renju.pop()
 
-    if len(win_moves) is not 0:
+    if len(win_moves) != 0:
         print(*win_moves[0])
     else:
         shuffle(next_moves)
