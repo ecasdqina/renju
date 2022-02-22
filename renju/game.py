@@ -283,7 +283,6 @@ class Renju(Board):
 
         # 黒の禁手処理
         res = self.renzoku(move)
-        print(res)
         if res.count(3) > 1:  # 三三
             return False
         if res.count(4) > 1:  # 四四
@@ -311,7 +310,6 @@ class Renju(Board):
                 if x < 0 or y < 0 or x >= HEIGHT or y >= WIDTH:
                     break
 
-                print(self.board[x][y], my_type)
                 if self.board[x][y] is my_type:
                     count += 1
                 else:
