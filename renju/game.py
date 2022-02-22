@@ -337,7 +337,7 @@ class Renju(Board):
     def shishi(self, move: Move) -> bool:
         """四四のチェック"""
 
-        shi = 0
+        res = []
         directions = [(0, 1), (-1, 1), (-1, 0), (-1, -1),
                       (0, -1), (1, -1), (1, 0), (1, 1)]
         for (dx, dy) in directions:
@@ -357,7 +357,6 @@ class Renju(Board):
                     count += 1
                 if not skip and self.board[x][y] is SquareType.VACANT:
                     skip = True
-                    count += 1
                 else:
                     break
 
@@ -375,10 +374,9 @@ class Renju(Board):
                 else:
                     break
 
-            if count == 4:  # 四
-                shi += 1
+            res.append(count)
 
-        return shi >= 2
+        return res.count(4) >= 2
 
     @property
     def finished(self) -> bool:
