@@ -25,7 +25,7 @@ requirements.txt を元に pip3 で依存ライブラリをインストール
 実行方法をオプションで渡す、渡さなければ手で打つ。
 
 ```bash
-$ python3/main.py -f 'python3 solver/random_solver.py' -s 'python3 solver/random_solver.py'
+$ python3 renju/main.py -f 'python3 solver/random_solver.py' -s 'python3 solver/random_solver.py'
 ```
 
 ### ソルバー単体

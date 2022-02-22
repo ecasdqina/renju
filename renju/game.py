@@ -282,10 +282,11 @@ class Renju(Board):
             return True
 
         # 黒の禁手処理
+        if self.shishi(move):  # 四四
+            return False
+
         res = self.renzoku(move)
         if res.count(3) > 1:  # 三三
-            return False
-        if res.count(4) > 1:  # 四四
             return False
         if max(res) > 5:  # 長連
             return False
@@ -332,6 +333,52 @@ class Renju(Board):
             res.append(count)
 
         return res
+
+    def shishi(self, move: Move) -> bool:
+        """四四のチェック"""
+
+        shi = 0
+        directions = [(0, 1), (-1, 1), (-1, 0), (-1, -1),
+                      (0, -1), (1, -1), (1, 0), (1, 1)]
+        for (dx, dy) in directions:
+            my_type = to_square_type(move.player)
+            count = 1
+
+            x, y, skip = move.x, move.y, False
+            while True:
+                x += dx
+                y += dy
+
+                # 盤外
+                if x < 0 or y < 0 or x >= HEIGHT or y >= WIDTH:
+                    break
+
+                if self.board[x][y] is my_type:
+                    count += 1
+                if not skip and self.board[x][y] is SquareType.VACANT:
+                    skip = True
+                    count += 1
+                else:
+                    break
+
+            x, y = move.x, move.y
+            while True:
+                x -= dx
+                y -= dy
+
+                # 盤外
+                if x < 0 or y < 0 or x >= HEIGHT or y >= WIDTH:
+                    break
+
+                if self.board[x][y] is my_type:
+                    count += 1
+                else:
+                    break
+
+            if count == 4:  # 四
+                shi += 1
+
+        return shi >= 2
 
     @property
     def finished(self) -> bool:
